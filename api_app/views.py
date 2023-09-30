@@ -1,7 +1,3 @@
-from email import header
-from http.client import HTTPResponse
-from turtle import shape, st
-from urllib import response
 
 from django.http import JsonResponse
 from django.utils.decorators import method_decorator
@@ -17,30 +13,38 @@ import json
 import numpy as np
 from decimal import *
 import collections.abc
-import scipy
+
 
 class Inicio(TemplateView):
     template_name = "templates/inicio.html"
 
+
 def HomeView(request):
     return render(request, 'templates/home.html', {})
+
 
 def IndexView(request):
     return render(request, 'templates/index.html', {})
 
+
 def CadastroView(request):
     return render(request, 'templates/cadastro.html', {})
+
 
 def SobreView(request):
     return render(request, 'templates/sobre.html', {})
 
+
 def TutorialView(request):
     return render(request, 'templates/tutorial.html', {})
+
 
 def serve_angular(request):
     return render(request, 'time-controller-domain.component.html')
 
+
 """---------------------------------------------Controlador LQR---------------------------------------------"""
+
 
 @method_decorator(csrf_exempt, name='dispatch')
 class EasyControllerLqr(View):
@@ -84,7 +88,7 @@ class EasyControllerLqr(View):
         if max_auto == min_auto:
             constMax = constMax * 2
         Tmax = np.floor(((2 * np.pi)/(max_auto)) * (constMax))
-        
+
         t = np.arange(0, Tmax + T, T)
 
         Ni = len(t)
@@ -100,12 +104,13 @@ class EasyControllerLqr(View):
         y = np.zeros((Ny, Nu))
 
         for k in range(Nx, Ni):
-            
-            dx = matrizA @ np.transpose([x[:, k - 1]]) + matrizB @ np.transpose([u[:, k - 1]])
+
+            dx = matrizA @ np.transpose([x[:, k - 1]]) + \
+                matrizB @ np.transpose([u[:, k - 1]])
             dx = np.reshape(dx, (Nx, 1))
             x_linha = np.transpose([x[:, k - 1]]) + dx * T
             x_linha = np.reshape(x_linha, (Nx, 1))
-            x = np.concatenate((x, x_linha), axis=1)            
+            x = np.concatenate((x, x_linha), axis=1)
             y = np.concatenate((y, matrizC @ np.transpose([x[:, k]])), axis=1)
             u_linhaA = np.transpose([x[:, k - 1]])
             u_linhaA = np.reshape(u_linhaA, (Nx, 1))
@@ -122,7 +127,7 @@ class EasyControllerLqr(View):
         encodeNu = json.dumps(Nu, cls=NumpyArrayEncoder)
         encodeNy = json.dumps(Ny, cls=NumpyArrayEncoder)
         encodeT = json.dumps(T, cls=NumpyArrayEncoder)
-            
+
         reponse = {
             "Yout": encodeY,
             "time": t.tolist(),
@@ -139,10 +144,13 @@ class EasyControllerLqr(View):
             'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
             'Access-Control-Allow-Headers': '*'
         }
-        response = JsonResponse(reponse, status=201, safe=True, headers=headers)
+        response = JsonResponse(reponse, status=201,
+                                safe=True, headers=headers)
         return response
 
+
 """---------------------------------------------Controlador LQI---------------------------------------------"""
+
 
 @method_decorator(csrf_exempt, name='dispatch')
 class EasyControllerLqi(View):
@@ -176,15 +184,17 @@ class EasyControllerLqi(View):
 
         Ahat = np.concatenate(((np.concatenate((matrizA, np.zeros((np.size(matrizA, 0), np.size(matrizC, 0)))), axis=1)), (
             np.concatenate((-matrizC, np.zeros((np.size(matrizC, 0), np.size(matrizC, 0)))), axis=1))), axis=0)
-        
-        Bhat = np.concatenate((matrizB, np.zeros((np.size(matrizC, 0), np.size(matrizB, 1)))), axis=0)
-        
-        Chat = np.concatenate((matrizC, np.zeros((np.size(matrizC, 0), 3))), axis=1)
+
+        Bhat = np.concatenate(
+            (matrizB, np.zeros((np.size(matrizC, 0), np.size(matrizB, 1)))), axis=0)
+
+        Chat = np.concatenate(
+            (matrizC, np.zeros((np.size(matrizC, 0), 3))), axis=1)
 
         if np.size(matrizB, 1) > 1:
             Dhat = np.zeros((np.size(Chat, 0), np.size(Bhat, 1)))
         else:
-            Dhat = matrizD        
+            Dhat = matrizD
 
         Nx = len(matrizA)
         Nu = np.size(matrizB, 1)
@@ -199,12 +209,12 @@ class EasyControllerLqi(View):
         max_auto = max(abs(auto_val))
         T = ((2 * np.pi)/(1000 * min_auto))
         constMax = (max_auto/min_auto)
-        
+
         if constMax < max_auto/2:
             constMax = (max_auto/min_auto)*2
         elif constMax > 5 * max_auto:
             constMax = (max_auto/min_auto)*1.5
-            
+
         if max_auto == min_auto:
             constMax = constMax * 4
         Tmax = np.floor(((2 * np.pi)/(max_auto)) * (constMax))
@@ -225,9 +235,10 @@ class EasyControllerLqi(View):
             Ki = Ki.T
 
         for k in range(Nx, Ni):
-            
-            dx = matrizA @ np.transpose([x[:, k - 1]]) + matrizB @ np.transpose([u[:, k - 1]])   
-            dx = np.reshape(dx, (Nx, 1))            
+
+            dx = matrizA @ np.transpose([x[:, k - 1]]) + \
+                matrizB @ np.transpose([u[:, k - 1]])
+            dx = np.reshape(dx, (Nx, 1))
             x_linha = np.transpose([x[:, k - 1]]) + dx * T
             x_linha = np.reshape(x_linha, (Nx, 1))
             x = np.concatenate((x, x_linha), axis=1)
@@ -240,8 +251,8 @@ class EasyControllerLqi(View):
             u = np.concatenate((u, u_linha), axis=1)
 
         yRavel = np.ravel(y)
-        ySplit = np.split(yRavel, Ny)        
-        
+        ySplit = np.split(yRavel, Ny)
+
         encodeY = json.dumps(ySplit, cls=NumpyArrayEncoder)
         encodeU = json.dumps(u, cls=NumpyArrayEncoder)
         encodeK = json.dumps(K, cls=NumpyArrayEncoder)
@@ -250,7 +261,6 @@ class EasyControllerLqi(View):
         encodeNu = json.dumps(Nu, cls=NumpyArrayEncoder)
         encodeNy = json.dumps(Ny, cls=NumpyArrayEncoder)
         encodeT = json.dumps(T, cls=NumpyArrayEncoder)
-            
 
         reponse = {
             "Yout": encodeY,
@@ -275,6 +285,7 @@ class EasyControllerLqi(View):
 
 
 """---------------------------------------------Controlador LQG---------------------------------------------"""
+
 
 @method_decorator(csrf_exempt, name='dispatch')
 class EasyControllerLqg(View):
@@ -307,12 +318,12 @@ class EasyControllerLqg(View):
         matrizC = np.array(data.get('C'), dtype=float)
         matrizD = np.array(data.get('D'), dtype=float)
         ci = np.array(data.get('CI'), dtype=float)
-        
+
         if np.size(matrizB, 1) or np.size(matrizC, 0) > 1:
             Dhat = np.zeros((np.size(matrizC, 0), np.size(matrizB, 1)))
         else:
-            Dhat = matrizD            
-        
+            Dhat = matrizD
+
         [K, S, E] = control.lqr(matrizA, matrizB, matrizQ, matrizR)
 
         auto_val = np.linalg.eigvals(matrizA - matrizB * K)
@@ -337,28 +348,30 @@ class EasyControllerLqg(View):
             x = (ci) * np.ones((Nx, Nx))
         xhat = np.zeros((Nx, Nx))
         y = np.zeros((Ny, Nx))
-               
+
         sys = control.StateSpace(matrizA, matrizB, matrizC, Dhat)
         [L, P, EK] = control.lqe(sys, matrizQN, matrizRN)
 
         for k in range(Nx, Ni):
-            
-            dx = matrizA @ np.transpose([x[:, k - 1]]) + matrizB @ np.transpose([u[:, k - 1]])
+
+            dx = matrizA @ np.transpose([x[:, k - 1]]) + \
+                matrizB @ np.transpose([u[:, k - 1]])
             dx = np.reshape(dx, (Nx, 1))
             x_linha = np.transpose([x[:, k - 1]]) + dx * T
             x_linha = np.reshape(x_linha, (Nx, 1))
-            x = np.concatenate((x, x_linha), axis=1)            
+            x = np.concatenate((x, x_linha), axis=1)
             y = np.concatenate((y, matrizC @ np.transpose([x[:, k]])), axis=1)
 
             dx_hatA = np.transpose([xhat[:, k - 1]])
             dx_hatA = np.reshape(dx_hatA, (Nx, 1))
             dx_hatB = matrizB @ np.transpose([u[:, k - 1]])
             dx_hatB = np.reshape(dx_hatB, (Nx, 1))
-            dx_hat = (matrizA - L * matrizC) @ dx_hatA + dx_hatB + L * np.transpose([y[:, k-1]])
-            
+            dx_hat = (matrizA - L * matrizC) @ dx_hatA + \
+                dx_hatB + L * np.transpose([y[:, k-1]])
+
             xhat_linhaA = np.transpose([xhat[:, k - 1]])
             xhat_linhaA = np.reshape(xhat_linhaA, (Nx, 1))
-            xhat_linha =  xhat_linhaA + dx_hat * T
+            xhat_linha = xhat_linhaA + dx_hat * T
             xhat = np.concatenate((xhat, xhat_linha), axis=1)
 
             u_linhaA = np.transpose([xhat[:, k - 1]])
@@ -374,7 +387,7 @@ class EasyControllerLqg(View):
         encodeNu = json.dumps(Nu, cls=NumpyArrayEncoder)
         encodeNy = json.dumps(Ny, cls=NumpyArrayEncoder)
         encodeT = json.dumps(T, cls=NumpyArrayEncoder)
-        
+
         reponse = {
             "Yout": encodeY,
             "time": t.tolist(),
@@ -392,10 +405,13 @@ class EasyControllerLqg(View):
             'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
             'Access-Control-Allow-Headers': '*'
         }
-        response = JsonResponse(reponse, status=201,safe=True, headers=headers)
+        response = JsonResponse(reponse, status=201,
+                                safe=True, headers=headers)
         return response
 
+
 """---------------------------------------------Controlador LQGI---------------------------------------------"""
+
 
 @method_decorator(csrf_exempt, name='dispatch')
 class EasyControllerLqgi(View):
@@ -431,8 +447,10 @@ class EasyControllerLqgi(View):
 
         Ahat = np.concatenate(((np.concatenate((matrizA, np.zeros((np.size(matrizA, 0), np.size(matrizC, 0)))), axis=1)), (
             np.concatenate((-matrizC, np.zeros((np.size(matrizC, 0), np.size(matrizC, 0)))), axis=1))), axis=0)
-        Bhat = np.concatenate((matrizB, np.zeros((np.size(matrizC, 0), np.size(matrizB, 1)))), axis=0)
-        Chat = np.concatenate((matrizC, np.zeros((np.size(matrizC, 0), 1))), axis=1)
+        Bhat = np.concatenate(
+            (matrizB, np.zeros((np.size(matrizC, 0), np.size(matrizB, 1)))), axis=0)
+        Chat = np.concatenate(
+            (matrizC, np.zeros((np.size(matrizC, 0), 1))), axis=1)
 
         if np.size(matrizB, 1) > 1 or np.size(matrizC, 0) > 1:
             Dhat = np.zeros((np.size(matrizC, 0), np.size(matrizB, 1)))
@@ -475,7 +493,7 @@ class EasyControllerLqgi(View):
         t = np.arange(0, Tmax + T, T)
 
         Ni = len(t)
-        
+
         u = np.zeros((Nu, Nx))
         x = np.transpose(ci) * np.ones((Nx, Nx))
         xhat = np.zeros((Nx, Nx))
@@ -486,32 +504,34 @@ class EasyControllerLqgi(View):
 
         if Nu == Ny:
             Ki = Ki.T
-        
+
         sys = control.StateSpace(matrizA, matrizB, matrizC, Dhat)
         [L, P, EK] = control.lqe(sys, matrizQN, matrizRN)
-       
+
         for k in range(Nx, Ni):
-            
-            dx = matrizA @ np.transpose([x[:, k - 1]]) + matrizB @ np.transpose([u[:, k - 1]])
+
+            dx = matrizA @ np.transpose([x[:, k - 1]]) + \
+                matrizB @ np.transpose([u[:, k - 1]])
             dx = np.reshape(dx, (Nx, 1))
             x_linha = np.transpose([x[:, k - 1]]) + dx * T
             x_linha = np.reshape(x_linha, (Nx, 1))
             x = np.concatenate((x, x_linha), axis=1)
-            
+
             y = np.concatenate((y, matrizC @ np.transpose([x[:, k]])), axis=1)
 
             dx_hatA = np.transpose([xhat[:, k - 1]])
             dx_hatA = np.reshape(dx_hatA, (Nx, 1))
             dx_hatB = matrizB @ np.transpose([u[:, k - 1]])
             dx_hatB = np.reshape(dx_hatB, (Nx, 1))
-            dx_hat = (matrizA - L * matrizC) @ dx_hatA + dx_hatB + L * np.transpose([y[:, k-1]])
-            
+            dx_hat = (matrizA - L * matrizC) @ dx_hatA + \
+                dx_hatB + L * np.transpose([y[:, k-1]])
+
             xhat_linhaA = np.transpose([xhat[:, k - 1]])
             xhat_linhaA = np.reshape(xhat_linhaA, (Nx, 1))
-            xhat_linha =  xhat_linhaA + dx_hat * T
+            xhat_linha = xhat_linhaA + dx_hat * T
             xhat = np.concatenate((xhat, xhat_linha), axis=1)
 
-            e = np.transpose([ref[:, k - 1] - y[:, k - 1]])                    
+            e = np.transpose([ref[:, k - 1] - y[:, k - 1]])
             int_e = int_e + e * T
             u_linhaA = np.transpose([xhat[:, k - 1]])
             u_linhaA = np.reshape(u_linhaA, (Nx, 1))
@@ -547,8 +567,10 @@ class EasyControllerLqgi(View):
             'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
             'Access-Control-Allow-Headers': '*'
         }
-        response = JsonResponse(reponse, status=201,safe=True, headers=headers)
+        response = JsonResponse(reponse, status=201,
+                                safe=True, headers=headers)
         return response
+
 
 @method_decorator(csrf_exempt, name='dispatch')
 class EasyController(View):
@@ -582,14 +604,15 @@ class EasyController(View):
 
         logging.info('---------------Dinâmica da Planta---------------')
 
-        for n in range (cols):
+        for n in range(cols):
 
             logging.info('i >> %s', matrizB_cols[n])
 
             for c in matrizC:
                 logging.info('n >> %s', c)
 
-                ssResponse = control.StateSpace(matrizA, matrizB_cols[n], c, matrizD)
+                ssResponse = control.StateSpace(
+                    matrizA, matrizB_cols[n], c, matrizD)
 
                 [wn, zeta, poles] = control.damp(ssResponse)
                 zeta[zeta != zeta] = 1
@@ -597,14 +620,15 @@ class EasyController(View):
                     timeconst = 1/(zeta*wn)
                     timeconst = timeconst.round()
                 if max(timeconst) == float("inf"):
-                    newtimeconst = np.delete(timeconst, np.where(timeconst == float("inf")))
+                    newtimeconst = np.delete(
+                        timeconst, np.where(timeconst == float("inf")))
                     if len(newtimeconst) == 0:
                         newtimeconst = np.arange(3)
                     timeSim = 5 * max(newtimeconst)
                 else:
                     timeSim = 5 * max(timeconst)
                 time = np.arange(0, timeSim, timeSim/200, dtype=float)
-                
+
                 out_y, time, out_x = conmat.lsim(ssResponse, 1, time)
 
                 stepY = []
@@ -615,7 +639,7 @@ class EasyController(View):
                         stepY.append(float("{:.4f}".format(i)))
 
                 outY_total.append(stepY)
-                
+
         ctrb = conmat.ctrb(matrizA, matrizB)
         control_rank = np.linalg.matrix_rank(ctrb)
         control_rank_result = "O sistema não é controlável"
@@ -646,7 +670,6 @@ class EasyController(View):
             'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
             'Access-Control-Allow-Headers': '*'
         }
-        response = JsonResponse(reponse, status=201, safe=True, headers=headers)
+        response = JsonResponse(reponse, status=201,
+                                safe=True, headers=headers)
         return response
-
-
