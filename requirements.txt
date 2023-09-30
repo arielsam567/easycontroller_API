@@ -3,3 +3,4 @@ control==0.9.4
 numpy==1.26.0
 django-cors-headers==4.2.0
 django-webpack-loader==2.0.1
+gunicorn==21.2.0
