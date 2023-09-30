@@ -7,5 +7,8 @@ Link do site: [easycontroller](https://teste-285200.web.app/)
 ## COMO RODAR O PROJETO
 
 - pip install -r requirements.txt
-- python manage.py runserver
+- python3 manage.py runserver
 
+## DEPLOY COM VERCEL
+
+- vercel --prod
