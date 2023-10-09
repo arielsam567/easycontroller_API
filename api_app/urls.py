@@ -1,4 +1,7 @@
 from django.urls import path
+
+from api_app.laplace import dadosgrafico
+from api_app.laplace_stepTwo import dadosgrafico2
 from .views import EasyController
 from .views import EasyControllerLqr
 from .views import EasyControllerLqi
@@ -19,6 +22,9 @@ urlpatterns = [
     path('easy-controller/lqi', EasyControllerLqi.as_view()),
     path('easy-controller/lqg', EasyControllerLqg.as_view()),
     path('easy-controller/lqgi', EasyControllerLqgi.as_view()),
+    path('laplace/stepOne', dadosgrafico()),
+    path('laplace/stepTwo', dadosgrafico2()),
+
     path('home/', HomeView),
     path('index/', IndexView),
     path('cadastro/', CadastroView),

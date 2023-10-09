@@ -1,9 +1,12 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from controll.control.statefbk import lqr
+from control.statefbk import lqr
+from control.statesp import StateSpace
+from control.stochsys import lqe
+# from controll.control.statefbk import lqr
 
-from controll.control.statesp import StateSpace
-from controll.control.stochsys import lqe
+# from controll.control.statesp import StateSpace
+# from controll.control.stochsys import lqe
 
 A = np.array([[0, 1], [-2, -1]])
 B = np.array([[1], [0]])
