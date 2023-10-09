@@ -42,5 +42,4 @@ def dadosgrafico(request):
         "newnumerador": (numerador2)
 
     }
-    return JsonResponse(response, headers={'Custom-Header': 'Header-Value'})
-
+    return JsonResponse(response, headers={'Access-Control-Allow-Headers': 'Header-Value', 'Access-Control-Allow-Origin': '*'})
