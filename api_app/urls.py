@@ -22,8 +22,8 @@ urlpatterns = [
     path('easy-controller/lqi', EasyControllerLqi.as_view()),
     path('easy-controller/lqg', EasyControllerLqg.as_view()),
     path('easy-controller/lqgi', EasyControllerLqgi.as_view()),
-    path('laplace/stepOne', dadosgrafico()),
-    path('laplace/stepTwo', dadosgrafico2()),
+    path('laplace/stepOne',  dadosgrafico, name='dados-grafico'),
+    path('laplace/stepTwo',  dadosgrafico2, name='dados-grafico2'),
 
     path('home/', HomeView),
     path('index/', IndexView),
