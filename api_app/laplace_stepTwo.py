@@ -398,4 +398,6 @@ def dadosgrafico2(request):
         "newreferencia": referencia
     }
 
-    return JsonResponse(response, headers={'Access-Control-Allow-Headers': '*', 'Access-Control-Allow-Origin': '*'})
+    return JsonResponse(response, headers={'Access-Control-Allow-Origin': '*',
+                                           'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
+                                           'Access-Control-Allow-Headers': '*'})
