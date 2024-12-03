@@ -19,8 +19,8 @@ DEBUG = True
 ALLOWED_HOSTS = ['127.0.0.1', '.vercel.app', 'localhost', '.onrender.com']
 
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:4200",
-    "http://127.0.0.1:4200",
+    "http://localhost:5000",
+    "http://127.0.0.1:5000",
 ]
 
 CORS_ALLOW_ALL_ORIGINS = True
@@ -75,7 +75,8 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'com_br_easycontroller_app.wsgi.app'
+#WSGI_APPLICATION = 'com_br_easycontroller_app.wsgi.app'
+WSGI_APPLICATION = 'com_br_easycontroller_app.wsgi.application'
 
 
 # Database
