@@ -16,12 +16,12 @@ SECRET_KEY = 'django-insecure-74gqnvto*f4(x*1w(_a94od=y7@ylb7%0fi(-6-xt06h1xlzjl
 DEBUG = True
 
 
-ALLOWED_HOSTS = ['127.0.0.1', '.vercel.app', 'localhost', '.onrender.com']
+ALLOWED_HOSTS = ['127.0.0.1', '.vercel.app', 'localhost', '.onrender.com', '.web.app']
 
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5000",
-    "http://127.0.0.1:5000",
-]
+# CORS_ALLOWED_ORIGINS = [
+#     "http://localhost:5000",
+#     "http://127.0.0.1:5000",
+# ]
 
 CORS_ALLOW_ALL_ORIGINS = True
 # Application definition
