@@ -25,6 +25,7 @@ ALLOWED_HOSTS = ['127.0.0.1', '.vercel.app', 'localhost', '.onrender.com', '.web
 
 CORS_ALLOWED_ORIGIN_REGEXES = [
     r"^https://.*\.web\.app$",
+    r"^https://.*\.onrender\.com$",
 ]
 
 CORS_ALLOW_ALL_ORIGINS = True
