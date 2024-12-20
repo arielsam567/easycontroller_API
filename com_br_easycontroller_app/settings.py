@@ -23,6 +23,10 @@ ALLOWED_HOSTS = ['127.0.0.1', '.vercel.app', 'localhost', '.onrender.com', '.web
 #     "http://127.0.0.1:5000",
 # ]
 
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r"^https://.*\.web\.app$",
+]
+
 CORS_ALLOW_ALL_ORIGINS = True
 # Application definition
 
@@ -46,6 +50,7 @@ WEBPACK_LOADER = {
 }
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
