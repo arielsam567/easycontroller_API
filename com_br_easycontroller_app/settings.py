@@ -16,16 +16,11 @@ SECRET_KEY = 'django-insecure-74gqnvto*f4(x*1w(_a94od=y7@ylb7%0fi(-6-xt06h1xlzjl
 DEBUG = True
 
 
-ALLOWED_HOSTS = ['127.0.0.1', '.vercel.app', 'localhost', '.onrender.com', '.web.app']
+ALLOWED_HOSTS = ['127.0.0.1', '.vercel.app', 'localhost', '.onrender.com']
 
-# CORS_ALLOWED_ORIGINS = [
-#     "http://localhost:5000",
-#     "http://127.0.0.1:5000",
-# ]
-
-CORS_ALLOWED_ORIGIN_REGEXES = [
-    r"^https://.*\.web\.app$",
-    r"^https://.*\.onrender\.com$",
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5000",
+    "http://127.0.0.1:5000",
 ]
 
 CORS_ALLOW_ALL_ORIGINS = True
@@ -51,7 +46,6 @@ WEBPACK_LOADER = {
 }
 
 MIDDLEWARE = [
-    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -81,7 +75,6 @@ TEMPLATES = [
     },
 ]
 
-#WSGI_APPLICATION = 'com_br_easycontroller_app.wsgi.app'
 WSGI_APPLICATION = 'com_br_easycontroller_app.wsgi.application'
 
 
