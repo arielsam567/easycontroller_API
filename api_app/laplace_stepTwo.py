@@ -18,11 +18,10 @@ def dadosgrafico2(request):
 
     T = request.GET.get('amostragem')
     T = float(T)
-
     controladores = request.GET.get('controladores')
     controladores = int(controladores)
     amostragemop = request.GET.get('amostragem1')
-    amostragemop = int(amostragemop)
+    amostragemop = float(amostragemop)
     referencia = request.GET.get('referencia')
     referencia = float(referencia)
     kp = request.GET.get('kp')
@@ -32,9 +31,15 @@ def dadosgrafico2(request):
     td = request.GET.get('td')
     td = float(td)
     saturacao = request.GET.get('saturacao')
-    saturacao = float(saturacao)
+    #saturacao = float(saturacao)
     saturacao1 = request.GET.get('saturacao1')
     saturacao1 = float(saturacao1)
+
+    saturacao = saturacao.split(',')
+    saturacao2 = []
+    for i in saturacao:
+        saturacao2.append(float(i))
+
     numerador = request.GET.get('numerador')
     denominador = request.GET.get('denominador')
     denominador = denominador.split(',')
@@ -52,7 +57,10 @@ def dadosgrafico2(request):
     erro = float(0)
 
     if (saturacao1 == 0):
-        saturacao = 100000
+        saturacao2[0] = -1000000
+    
+    if (saturacao1 == 0):
+        saturacao2[1] = 1000000
 
     if (zigler == 2):
         yout, tem = step(sys1)
@@ -193,11 +201,18 @@ def dadosgrafico2(request):
 
             u[i] = u[i-1] + du
 
-            if (u[i] >= saturacao):
-                u[i] = saturacao
+            #if (u[i] >= saturacao):
+            #    u[i] = saturacao
 
-            if (u[i] <= 0):
-                u[i] = 0
+            #if (u[i] <= 0):
+            #    u[i] = 0
+
+            if (u[i] >= saturacao2[1]):
+                u[i] = saturacao2[1]
+
+            if (u[i] <= saturacao2[0]):
+                u[i] = saturacao2[0]
+            
             erro2 = erro1
             erro1 = erro
 
@@ -248,14 +263,21 @@ def dadosgrafico2(request):
             erro = referencia - y[i-1]
             u[i] = (r0*erro) + (r1*erro1)
 
-            if (u[i] >= saturacao):
-                u[i] = saturacao
+            #if (u[i] >= saturacao):
+            #    u[i] = saturacao
 
-            if (u[i] <= 0):
-                u[i] = 0
+            #if (u[i] <= 0):
+            #    u[i] = 0
+            
+            if (u[i] >= saturacao2[1]):
+                u[i] = saturacao2[1]
+
+            if (u[i] <= saturacao2[0]):
+                u[i] = saturacao2[0]
+
             erro2 = erro1
             erro1 = erro
-# controlador PI
+    # controlador PI
     if (controladores == 2):
         PI = kp*(1 + 1/(s*ti))
         sys3 = (sys1*PI)/(1+sys1*PI)
@@ -304,11 +326,18 @@ def dadosgrafico2(request):
             erro = referencia - y[i-1]
             u[i] = u[i-1] + (r0*erro) + (r1*erro1)
 
-            if (u[i] >= saturacao):
-                u[i] = saturacao
+            #if (u[i] >= saturacao):
+            #    u[i] = saturacao
 
-            if (u[i] <= 0):
-                u[i] = 0
+            #if (u[i] <= 0):
+            #    u[i] = 0
+            
+            if (u[i] >= saturacao2[1]):
+                u[i] = saturacao2[1]
+
+            if (u[i] <= saturacao2[0]):
+                u[i] = saturacao2[0]
+            
             erro2 = erro1
             erro1 = erro
 
@@ -361,11 +390,17 @@ def dadosgrafico2(request):
 
             u[i] = (kp*erro)
 
-            if (u[i] >= saturacao):
-                u[i] = saturacao
+            #if (u[i] >= saturacao):
+            #    u[i] = saturacao
 
-            if (u[i] <= 0):
-                u[i] = 0
+            #if (u[i] <= 0):
+            #    u[i] = 0
+            
+            if (u[i] >= saturacao2[1]):
+                u[i] = saturacao2[1]
+
+            if (u[i] <= saturacao2[0]):
+                u[i] = saturacao2[0]
 
             erro2 = erro1
             erro1 = erro
@@ -393,7 +428,8 @@ def dadosgrafico2(request):
         "newkp": kp,
         "newti": ti,
         "newtd": td,
-        "newsaturacao": saturacao,
+        "newsaturacaoSup": str(saturacao2[1]),
+        "newsaturacaoInf": str(saturacao2[0]),
         "newcontrole1": controladores,
         "newreferencia": referencia
     }

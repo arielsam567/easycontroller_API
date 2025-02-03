@@ -13,6 +13,7 @@ import json
 import numpy as np
 from decimal import *
 import collections.abc
+import time
 
 
 class Inicio(TemplateView):
@@ -73,21 +74,31 @@ class EasyControllerLqr(View):
         matrizC = np.array(data.get('C'), dtype=float)
         matrizD = np.array(data.get('D'), dtype=float)
         ci = np.array(data.get('CI'), dtype=float)
+        body = data.get('getbody', {})
 
-        if np.size(matrizB, 1) > 1 or np.size(matrizC, 0) > 1:
-            Dhat = np.zeros((np.size(matrizC, 0), np.size(matrizB, 1)))
-        else:
-            Dhat = matrizD
+        saturacao = np.array(data.get('SAT'), dtype=float)
+        saturacao1 = body.get('saturacao1')
+        saturacao1 = float(saturacao1)
+
+        if (saturacao1 == 1):
+            lim_sup = saturacao[0, :]
+            lim_inf = saturacao[1, :]
+
+        T = body.get('amostragem')
+        T = float(T)
 
         [K, S, E] = control.lqr(matrizA, matrizB, matrizQ, matrizR)
         auto_val = np.linalg.eigvals(matrizA - matrizB * K)
         min_auto = min(abs(auto_val))
         max_auto = max(abs(auto_val))
         constMax = (max_auto/min_auto)
-        T = ((2 * np.pi)/(1000 * min_auto))
+
+        if (T == 0):
+            T = (2 * np.pi/(10000 * min_auto))
+
         if max_auto == min_auto:
             constMax = constMax * 2
-        Tmax = np.floor(((2 * np.pi)/(max_auto)) * (constMax))
+        Tmax = ((2 * np.pi)/(max_auto)) * (constMax)
 
         t = np.arange(0, Tmax + T, T)
 
@@ -100,7 +111,7 @@ class EasyControllerLqr(View):
         if Nx == 2:
             x = (ci).T * np.ones((Nx, Nx))
         else:
-            x = (ci) * np.ones((Nx, Nx))
+            x = (ci).T * np.ones((Nx, Nx))
         y = np.zeros((Ny, Nu))
 
         for k in range(Nx, Ni):
@@ -116,6 +127,13 @@ class EasyControllerLqr(View):
             u_linhaA = np.reshape(u_linhaA, (Nx, 1))
             u_linha = - K * u_linhaA
             u = np.concatenate((u, u_linha), axis=1)
+
+            if (saturacao1 == 1):
+                for i in range(u.shape[0]):
+                    linha = u[i]
+                    valorsup = lim_sup[i]
+                    valorinf = lim_inf[i]
+                    u[i] = np.where(linha > valorsup, valorsup, np.where(linha < valorinf, valorinf, linha))
 
         yRavel = np.ravel(y)
         ySplit = np.split(yRavel, Ny)
@@ -165,124 +183,164 @@ class EasyControllerLqi(View):
         return JsonResponse({}, status=200, safe=True, headers=headers)
 
     def post(self, request):
-        class NumpyArrayEncoder(json.JSONEncoder):
-            def default(self, obj):
-                if isinstance(obj, np.ndarray):
-                    return obj.tolist()
-                elif isinstance(obj, np.integer):
-                    return int(obj)
-                return json.JSONEncoder.default(self, obj)
+        try:
+            class NumpyArrayEncoder(json.JSONEncoder):
+                def default(self, obj):
+                    if isinstance(obj, np.ndarray):
+                        return obj.tolist()
+                    elif isinstance(obj, np.integer):
+                        return int(obj)
+                    return json.JSONEncoder.default(self, obj)
 
-        data = json.loads(request.body)
-        matrizQ = np.array(data.get('Q'), dtype=float)
-        matrizR = np.array(data.get('R'), dtype=float)
-        matrizA = np.array(data.get('A'), dtype=float)
-        matrizB = np.array(data.get('B'), dtype=float)
-        matrizC = np.array(data.get('C'), dtype=float)
-        matrizD = np.array(data.get('D'), dtype=float)
-        ci = np.array(data.get('CI'), dtype=float)
+            data = json.loads(request.body)
+            matrizQ = np.array(data.get('Q'), dtype=float)
+            matrizR = np.array(data.get('R'), dtype=float)
+            matrizA = np.array(data.get('A'), dtype=float)
+            matrizB = np.array(data.get('B'), dtype=float)
+            matrizC = np.array(data.get('C'), dtype=float)
+            matrizD = np.array(data.get('D'), dtype=float)
+            ci = 0
+            body = data.get('getbody', {})
 
-        Ahat = np.concatenate(((np.concatenate((matrizA, np.zeros((np.size(matrizA, 0), np.size(matrizC, 0)))), axis=1)), (
-            np.concatenate((-matrizC, np.zeros((np.size(matrizC, 0), np.size(matrizC, 0)))), axis=1))), axis=0)
+            saturacao = np.array(data.get('SAT'), dtype=float)
+            saturacao1 = body.get('saturacao1')
+            saturacao1 = float(saturacao1)
 
-        Bhat = np.concatenate(
-            (matrizB, np.zeros((np.size(matrizC, 0), np.size(matrizB, 1)))), axis=0)
+            if (saturacao1 == 1):
+                lim_sup = saturacao[0, :]
+                lim_inf = saturacao[1, :]
 
-        Chat = np.concatenate(
-            (matrizC, np.zeros((np.size(matrizC, 0), 3))), axis=1)
+            T = body.get('amostragem')
+            T = float(T)
 
-        if np.size(matrizB, 1) > 1:
+            referencia = np.array(data.get('REF'), dtype=float)
+            referencia1 = body.get('referencia1')
+            referencia1 = float(referencia1)
+
+            Ahat = np.concatenate(((np.concatenate((matrizA, np.zeros((np.size(matrizA, 0), np.size(matrizC, 0)))), axis=1)), (
+                np.concatenate((-matrizC, np.zeros((np.size(matrizC, 0), np.size(matrizC, 0)))), axis=1))), axis=0)
+
+            Bhat = np.concatenate(
+                (matrizB, np.zeros((np.size(matrizC, 0), np.size(matrizB, 1)))), axis=0)
+
+            Chat = np.concatenate(
+                (matrizC, np.zeros((np.size(matrizC, 0), 1))), axis=1)
+
             Dhat = np.zeros((np.size(Chat, 0), np.size(Bhat, 1)))
-        else:
-            Dhat = matrizD
 
-        Nx = len(matrizA)
-        Nu = np.size(matrizB, 1)
-        Ny = np.size(matrizC, 0)
+            Nx = len(matrizA)
+            Nu = np.size(matrizB, 1)
+            Ny = np.size(matrizC, 0)
 
-        [Ke, S, E] = control.lqr(Ahat, Bhat, matrizQ, matrizR)
-        Ki = Ke[0:Nu, Nx:Nx+Ny]
-        K = Ke[:, 0:Nx]
+            [Ke, S, E] = control.lqr(Ahat, Bhat, matrizQ, matrizR)
+            Ki = Ke[0:Nu, Nx:Nx+Ny]
+            K = Ke[:, 0:Nx]
 
-        auto_val = np.linalg.eigvals(matrizA - (matrizB @ K))
-        min_auto = min(abs(auto_val))
-        max_auto = max(abs(auto_val))
-        T = ((2 * np.pi)/(1000 * min_auto))
-        constMax = (max_auto/min_auto)
+            ssResponse = control.StateSpace(
+                        Ahat-Bhat*Ke, Bhat, Chat, Dhat)
 
-        if constMax < max_auto/2:
-            constMax = (max_auto/min_auto)*2
-        elif constMax > 5 * max_auto:
-            constMax = (max_auto/min_auto)*1.5
+            [wn, zeta, poles] = control.damp(ssResponse)
+            zeta[zeta != zeta] = 1
+            for i in wn:
+                timeconst = 1/(zeta*wn)
+                # timeconst = timeconst.round()
+            if max(timeconst) == float("inf"):
+                newtimeconst = np.delete(
+                    timeconst, np.where(timeconst == float("inf")))
+                if len(newtimeconst) == 0:
+                    newtimeconst = np.arange(3)
+                timeSim = 5*max(newtimeconst)
+            else:
+                timeSim = 5*max(timeconst)
 
-        if max_auto == min_auto:
-            constMax = constMax * 4
-        Tmax = np.floor(((2 * np.pi)/(max_auto)) * (constMax))
-        t = np.arange(0, Tmax + T, T)
+            if (T == 0):
+                T = timeSim/10000
+            t = np.arange(0, timeSim, T, dtype=float)
 
-        Ni = len(t)
-        Nx = len(matrizA)
-        Nu = np.size(matrizB, 1)
-        Ny = np.size(matrizC, 0)
+            Ni = len(t)
+            Nx = len(matrizA)
+            Nu = np.size(matrizB, 1)
+            Ny = np.size(matrizC, 0)
 
-        u = np.zeros((Nu, Nx))
-        x = (ci) * np.ones((Nx, Nx))
-        ref = np.ones((Ny, Ni))
-        y = np.zeros((Ny, Nx))
-        int_e = 0
+            u = np.zeros((Nu, Nx))
+            x = (ci) * np.ones((Nx, Nx))
 
-        if Nu == Ny:
-            Ki = Ki.T
+            if (referencia1 == 1):
+                ref = np.tile(referencia, Ni)
+            else:
+                ref = np.ones((Ny, Ni))
 
-        for k in range(Nx, Ni):
+            y = np.zeros((Ny, Nx))
+            int_e = 0
 
-            dx = matrizA @ np.transpose([x[:, k - 1]]) + \
-                matrizB @ np.transpose([u[:, k - 1]])
-            dx = np.reshape(dx, (Nx, 1))
-            x_linha = np.transpose([x[:, k - 1]]) + dx * T
-            x_linha = np.reshape(x_linha, (Nx, 1))
-            x = np.concatenate((x, x_linha), axis=1)
-            y = np.concatenate((y, matrizC @ np.transpose([x[:, k]])), axis=1)
+            # if Nu == Ny:
+            #     Ki = Ki.T
 
-            e = np.transpose([ref[:, k - 1] - y[:, k - 1]])
-            int_e = int_e + e * T
-            u_linhaA = np.transpose([x[:, k - 1]])
-            u_linha = - K * u_linhaA - Ki * int_e
-            u = np.concatenate((u, u_linha), axis=1)
+            tempo_limite = 10.0
+            inicio_tempo = time.perf_counter()
 
-        yRavel = np.ravel(y)
-        ySplit = np.split(yRavel, Ny)
+            for k in range(Nx, Ni):
 
-        encodeY = json.dumps(ySplit, cls=NumpyArrayEncoder)
-        encodeU = json.dumps(u, cls=NumpyArrayEncoder)
-        encodeK = json.dumps(K, cls=NumpyArrayEncoder)
-        encodeKi = json.dumps(Ki, cls=NumpyArrayEncoder)
-        encodeNx = json.dumps(Nx, cls=NumpyArrayEncoder)
-        encodeNu = json.dumps(Nu, cls=NumpyArrayEncoder)
-        encodeNy = json.dumps(Ny, cls=NumpyArrayEncoder)
-        encodeT = json.dumps(T, cls=NumpyArrayEncoder)
+                tempo_decorrido = time.perf_counter() - inicio_tempo
+                if tempo_decorrido > tempo_limite:
+                    raise TimeoutError(f"O cálculo está demorando mais de {tempo_limite} segundos.")
+                
+                dx = matrizA @ np.transpose([x[:, k - 1]]) + \
+                    matrizB @ np.transpose([u[:, k - 1]])
+                dx = np.reshape(dx, (Nx, 1))
+                x_linha = np.transpose([x[:, k - 1]]) + dx * T
+                x_linha = np.reshape(x_linha, (Nx, 1))
+                x = np.concatenate((x, x_linha), axis=1)
+                y = np.concatenate((y, matrizC @ np.transpose([x[:, k]])), axis=1)
 
-        reponse = {
-            "Yout": encodeY,
-            "time": t.tolist(),
-            "Uhat": encodeU,
-            "K": encodeK,
-            "Ki": encodeKi,
-            "Nx": encodeNx,
-            "Nu": encodeNu,
-            "Ny": encodeNy,
-            "T": encodeT,
-        }
+                e = np.transpose([ref[:, k - 1] - y[:, k - 1]])
+                int_e = int_e + e * T
+                u_linhaA = np.transpose([x[:, k - 1]])
+                u_linha = - K * u_linhaA - Ki * int_e
+                u = np.concatenate((u, u_linha), axis=1)
 
-        headers = {
-            'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
-            'Access-Control-Allow-Headers': '*'
-        }
-        response = JsonResponse(reponse, status=201,
-                                safe=True, headers=headers)
-        return response
+                if (saturacao1 == 1):
+                    for i in range(u.shape[0]):
+                        linha = u[i]
+                        valorsup = lim_sup[i]
+                        valorinf = lim_inf[i]
+                        u[i] = np.where(linha > valorsup, valorsup, np.where(linha < valorinf, valorinf, linha))
 
+            yRavel = np.ravel(y)
+            ySplit = np.split(yRavel, Ny)
+
+            encodeY = json.dumps(ySplit, cls=NumpyArrayEncoder)
+            encodeU = json.dumps(u, cls=NumpyArrayEncoder)
+            encodeK = json.dumps(K, cls=NumpyArrayEncoder)
+            encodeKi = json.dumps(Ki, cls=NumpyArrayEncoder)
+            encodeNx = json.dumps(Nx, cls=NumpyArrayEncoder)
+            encodeNu = json.dumps(Nu, cls=NumpyArrayEncoder)
+            encodeNy = json.dumps(Ny, cls=NumpyArrayEncoder)
+            encodeT = json.dumps(T, cls=NumpyArrayEncoder)
+
+            reponse = {
+                "Yout": encodeY,
+                "time": t.tolist(),
+                "Uhat": encodeU,
+                "K": encodeK,
+                "Ki": encodeKi,
+                "Nx": encodeNx,
+                "Nu": encodeNu,
+                "Ny": encodeNy,
+                "T": encodeT,
+            }
+
+            headers = {
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
+                'Access-Control-Allow-Headers': '*'
+            }
+            response = JsonResponse(reponse, status=201,
+                                    safe=True, headers=headers)
+            return response
+        
+        except TimeoutError as e:
+            return JsonResponse({"success": False, "error": str(e)}, status=500)
 
 """---------------------------------------------Controlador LQG---------------------------------------------"""
 
@@ -318,6 +376,18 @@ class EasyControllerLqg(View):
         matrizC = np.array(data.get('C'), dtype=float)
         matrizD = np.array(data.get('D'), dtype=float)
         ci = np.array(data.get('CI'), dtype=float)
+        body = data.get('getbody', {})
+
+        saturacao = np.array(data.get('SAT'), dtype=float)
+        saturacao1 = body.get('saturacao1')
+        saturacao1 = float(saturacao1)
+
+        if (saturacao1 == 1):
+            lim_sup = saturacao[0, :]
+            lim_inf = saturacao[1, :]
+
+        T = body.get('amostragem')
+        T = float(T)
 
         if np.size(matrizB, 1) or np.size(matrizC, 0) > 1:
             Dhat = np.zeros((np.size(matrizC, 0), np.size(matrizB, 1)))
@@ -329,11 +399,12 @@ class EasyControllerLqg(View):
         auto_val = np.linalg.eigvals(matrizA - matrizB * K)
         min_auto = min(abs(auto_val))
         max_auto = max(abs(auto_val))
-        T = ((2 * np.pi)/(1000 * min_auto))
+        if (T == 0):
+            T = (2 * np.pi/(10000 * min_auto))
         constMax = (max_auto/min_auto)
         if max_auto == min_auto:
             constMax = constMax * 4
-        Tmax = np.floor(((2 * np.pi)/(max_auto)) * (constMax))
+        Tmax = ((2 * np.pi)/(max_auto)) * (constMax)
         t = np.arange(0, Tmax + T, T)
 
         Ni = len(t)
@@ -345,7 +416,7 @@ class EasyControllerLqg(View):
         if Nx == 2:
             x = np.transpose(ci) * np.ones((Nx, Nx))
         else:
-            x = (ci) * np.ones((Nx, Nx))
+            x = (ci).T * np.ones((Nx, Nx))
         xhat = np.zeros((Nx, Nx))
         y = np.zeros((Ny, Nx))
 
@@ -378,6 +449,13 @@ class EasyControllerLqg(View):
             u_linhaA = np.reshape(u_linhaA, (Nx, 1))
             u_linha = - K * u_linhaA
             u = np.concatenate((u, u_linha), axis=1)
+
+            if (saturacao1 == 1):
+                for i in range(u.shape[0]):
+                    linha = u[i]
+                    valorsup = lim_sup[i]
+                    valorinf = lim_inf[i]
+                    u[i] = np.where(linha > valorsup, valorsup, np.where(linha < valorinf, valorinf, linha))
 
         encodeY = json.dumps(y, cls=NumpyArrayEncoder)
         encodeU = json.dumps(u, cls=NumpyArrayEncoder)
@@ -443,7 +521,23 @@ class EasyControllerLqgi(View):
         matrizB = np.array(data.get('B'), dtype=float)
         matrizC = np.array(data.get('C'), dtype=float)
         matrizD = np.array(data.get('D'), dtype=float)
-        ci = np.array(data.get('CI'), dtype=float)
+        ci = 0
+        body = data.get('getbody', {})
+
+        saturacao = np.array(data.get('SAT'), dtype=float)
+        saturacao1 = body.get('saturacao1')
+        saturacao1 = float(saturacao1)
+
+        if (saturacao1 == 1):
+            lim_sup = saturacao[0, :]
+            lim_inf = saturacao[1, :]
+
+        T = body.get('amostragem')
+        T = float(T)
+
+        referencia = np.array(data.get('REF'), dtype=float)
+        referencia1 = body.get('referencia1')
+        referencia1 = float(referencia1)
 
         Ahat = np.concatenate(((np.concatenate((matrizA, np.zeros((np.size(matrizA, 0), np.size(matrizC, 0)))), axis=1)), (
             np.concatenate((-matrizC, np.zeros((np.size(matrizC, 0), np.size(matrizC, 0)))), axis=1))), axis=0)
@@ -452,10 +546,7 @@ class EasyControllerLqgi(View):
         Chat = np.concatenate(
             (matrizC, np.zeros((np.size(matrizC, 0), 1))), axis=1)
 
-        if np.size(matrizB, 1) > 1 or np.size(matrizC, 0) > 1:
-            Dhat = np.zeros((np.size(matrizC, 0), np.size(matrizB, 1)))
-        else:
-            Dhat = matrizD
+        Dhat = np.zeros((np.size(matrizC, 0), np.size(matrizB, 1)))
 
         Nx = len(matrizA)
         Nu = np.size(matrizB, 1)
@@ -467,43 +558,47 @@ class EasyControllerLqgi(View):
             'Access-Control-Allow-Headers': '*'
         }
 
-        try:
-            [Ke, S, E] = control.lqr(Ahat, Bhat, matrizQ, matrizR)
-        except:
-            return JsonResponse({"error": "0001"}, status=400, safe=True, headers=headers)
-
+        [Ke, S, E] = control.lqr(Ahat, Bhat, matrizQ, matrizR)
         Ki = Ke[0:Nu, Nx:Nx+Ny]
         K = Ke[:, 0:Nx]
 
-        auto_val = np.linalg.eigvals(matrizA - matrizB @ K)
-        min_auto = min(abs(auto_val))
-        max_auto = max(abs(auto_val))
-        T = ((2 * np.pi)/(1000 * min_auto))
-        constMax = (max_auto/min_auto)
+        ssResponse = control.StateSpace(
+                    Ahat-Bhat*Ke, Bhat, Chat, Dhat)
 
-        if constMax <= max_auto/2:
-            constMax = (max_auto/min_auto)*2
+        [wn, zeta, poles] = control.damp(ssResponse)
+        zeta[zeta != zeta] = 1
+        for i in wn:
+            timeconst = 1/(zeta*wn)
+            # timeconst = timeconst.round()
+        if max(timeconst) == float("inf"):
+            newtimeconst = np.delete(
+                timeconst, np.where(timeconst == float("inf")))
+            if len(newtimeconst) == 0:
+                newtimeconst = np.arange(3)
+            timeSim = 5*max(newtimeconst)
+        else:
+            timeSim = 5*max(timeconst)
 
-        elif constMax > 5 * max_auto:
-            constMax = (max_auto/min_auto)*1.5
-
-        if max_auto == min_auto:
-            constMax = constMax * 4
-        Tmax = np.floor(((2 * np.pi)/(max_auto)) * (constMax))
-        t = np.arange(0, Tmax + T, T)
+        if (T == 0):
+            T = timeSim/10000
+        t = np.arange(0, timeSim, T, dtype=float)
 
         Ni = len(t)
 
         u = np.zeros((Nu, Nx))
         x = np.transpose(ci) * np.ones((Nx, Nx))
         xhat = np.zeros((Nx, Nx))
-        ref = np.ones((Ny, Ni))
+        if (referencia1 == 1):
+            ref = np.tile(referencia, Ni)
+        else:
+            ref = np.ones((Ny, Ni))
+
         int_e = 0
 
         y = np.zeros((Ny, Nx))
 
-        if Nu == Ny:
-            Ki = Ki.T
+        # if Nu == Ny:
+        #     Ki = Ki.T
 
         sys = control.StateSpace(matrizA, matrizB, matrizC, Dhat)
         [L, P, EK] = control.lqe(sys, matrizQN, matrizRN)
@@ -537,6 +632,13 @@ class EasyControllerLqgi(View):
             u_linhaA = np.reshape(u_linhaA, (Nx, 1))
             u_linha = - K * u_linhaA - Ki * int_e
             u = np.concatenate((u, u_linha), axis=1)
+
+            if (saturacao1 == 1):
+                for i in range(u.shape[0]):
+                    linha = u[i]
+                    valorsup = lim_sup[i]
+                    valorinf = lim_inf[i]
+                    u[i] = np.where(linha > valorsup, valorsup, np.where(linha < valorinf, valorinf, linha))
 
         encodeY = json.dumps(y, cls=NumpyArrayEncoder)
         encodeU = json.dumps(u, cls=NumpyArrayEncoder)
@@ -591,25 +693,25 @@ class EasyController(View):
         matrizC = np.array(data.get('C'))
         matrizD = np.zeros((1, 1))
 
-        logging.info('Dados das matrizA >> %s', matrizA)
-        logging.info('Dados das matrizB >> %s', matrizB)
-        logging.info('Dados das matrizC >> %s', matrizC)
-        logging.info('Dados das matrizD >> %s', matrizD)
+        # logging.info('Dados das matrizA >> %s', matrizA)
+        # logging.info('Dados das matrizB >> %s', matrizB)
+        # logging.info('Dados das matrizC >> %s', matrizC)
+        # logging.info('Dados das matrizD >> %s', matrizD)
 
         cols = len(matrizB[0])
-        logging.info('cols >> %s', cols)
+        # logging.info('cols >> %s', cols)
         matrizB_cols = np.split(matrizB, cols, axis=1)
-        logging.info('matrizB_cols >> %s', matrizB_cols)
+        # logging.info('matrizB_cols >> %s', matrizB_cols)
         outY_total = []
 
-        logging.info('---------------Dinâmica da Planta---------------')
+        # logging.info('---------------Dinâmica da Planta---------------')
 
         for n in range(cols):
 
-            logging.info('i >> %s', matrizB_cols[n])
+            # logging.info('i >> %s', matrizB_cols[n])
 
             for c in matrizC:
-                logging.info('n >> %s', c)
+                # logging.info('n >> %s', c)
 
                 ssResponse = control.StateSpace(
                     matrizA, matrizB_cols[n], c, matrizD)
@@ -618,7 +720,7 @@ class EasyController(View):
                 zeta[zeta != zeta] = 1
                 for i in wn:
                     timeconst = 1/(zeta*wn)
-                    timeconst = timeconst.round()
+                    # timeconst = timeconst.round()
                 if max(timeconst) == float("inf"):
                     newtimeconst = np.delete(
                         timeconst, np.where(timeconst == float("inf")))
@@ -627,7 +729,7 @@ class EasyController(View):
                     timeSim = 5 * max(newtimeconst)
                 else:
                     timeSim = 5 * max(timeconst)
-                time = np.arange(0, timeSim, timeSim/200, dtype=float)
+                time = np.arange(0, timeSim, timeSim/10000, dtype=float)
 
                 out_y, time, out_x = conmat.lsim(ssResponse, 1, time)
 

@@ -65,49 +65,49 @@ control_sig = []
 y = np.array([[0, 0]])
 for n in range(cols):
 
-    for c in C:
+#     for c in C:
 
-        sys = StateSpace(A, matrizB_cols[n], c, D)
-        [L, P, EK] = lqe(sys, QK, RK)
-        for k in range(Nx, Ni):
-            # print(f'matrizB_cols: {matrizB_cols[n]}')
-            # print(f'u[:, k - 1]: {np.asarray([u[:, k - 1]]).T}')
-            dx = A @ np.transpose([x[:, k - 1]]) + \
-                matrizB_cols[n] @ np.asarray([u[:, k - 1]])
-            # print(f'dx: {dx}')
-            x_linha = np.transpose([x[:, k - 1]]) + dx * T
-            # print(f'x_linha: {x_linha}')
-            x = np.concatenate((x, x_linha), axis=1)
-            # print(f'x: {x}')
-            y = np.array(
-                [np.concatenate((y, c @ np.transpose([x[:, k]])), axis=None)])
-            # print(f'y: {y}')
+#         sys = StateSpace(A, matrizB_cols[n], c, D)
+#         [L, P, EK] = lqe(sys, QK, RK)
+#         for k in range(Nx, Ni):
+#             # print(f'matrizB_cols: {matrizB_cols[n]}')
+#             # print(f'u[:, k - 1]: {np.asarray([u[:, k - 1]]).T}')
+#             dx = A @ np.transpose([x[:, k - 1]]) + \
+#                 matrizB_cols[n] @ np.asarray([u[:, k - 1]])
+#             # print(f'dx: {dx}')
+#             x_linha = np.transpose([x[:, k - 1]]) + dx * T
+#             # print(f'x_linha: {x_linha}')
+#             x = np.concatenate((x, x_linha), axis=1)
+#             # print(f'x: {x}')
+#             y = np.array(
+#                 [np.concatenate((y, c @ np.transpose([x[:, k]])), axis=None)])
+#             # print(f'y: {y}')
 
-            dx_hat = (A - L * c) @ np.transpose([xhat[:, k - 1]]) + \
-                matrizB_cols[n] * np.transpose([u[:, k - 1]]) + L * y[:, k]
-            # print(f'dx_hat: {dx_hat}')
-            xhat_linha = np.transpose([xhat[:, k - 1]]) + dx_hat * T
-            # print(f'xhat_linha: {xhat_linha}, dim: {np.shape(xhat_linha)}')
-            xhat = np.concatenate((xhat, xhat_linha), axis=1)
-            # print(xhat)
-            u_linha = - K @ np.transpose([xhat[:, k - 1]])
-            # print(u_linha)
-            u = np.concatenate((u, u_linha), axis=1)
+#             dx_hat = (A - L * c) @ np.transpose([xhat[:, k - 1]]) + \
+#                 matrizB_cols[n] * np.transpose([u[:, k - 1]]) + L * y[:, k]
+#             # print(f'dx_hat: {dx_hat}')
+#             xhat_linha = np.transpose([xhat[:, k - 1]]) + dx_hat * T
+#             # print(f'xhat_linha: {xhat_linha}, dim: {np.shape(xhat_linha)}')
+#             xhat = np.concatenate((xhat, xhat_linha), axis=1)
+#             # print(xhat)
+#             u_linha = - K @ np.transpose([xhat[:, k - 1]])
+#             # print(u_linha)
+#             u = np.concatenate((u, u_linha), axis=1)
 
-        y_linha = np.ravel(y)
-        uhat = np.ravel(u)
-        plt.plot(t, y_linha)
-        plt.grid(True)
-        plt.show()
-        plt.plot(t, uhat)
-        plt.grid(True)
-        plt.show()
-print(f'k: {k}')
-print(f't: {t}')
-# print(f't_linha: {t_linha}')
-print(f'dx: {dx}')
-print(f'x: {x}')
-print(f'y: {y}')
-print(f'dx_hat: {dx_hat}')
-print(f'x_hat: {xhat}')
-print(f'u: {u}')
+#         y_linha = np.ravel(y)
+#         uhat = np.ravel(u)
+#         plt.plot(t, y_linha)
+#         plt.grid(True)
+#         plt.show()
+#         plt.plot(t, uhat)
+#         plt.grid(True)
+#         plt.show()
+# print(f'k: {k}')
+# print(f't: {t}')
+# # print(f't_linha: {t_linha}')
+# print(f'dx: {dx}')
+# print(f'x: {x}')
+# print(f'y: {y}')
+# print(f'dx_hat: {dx_hat}')
+# print(f'x_hat: {xhat}')
+# print(f'u: {u}')
